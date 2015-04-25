@@ -15,7 +15,7 @@ kvm:
 	@# and run "ggb vmlinux"
 	@kvm -kernel $(KERNEL_SRC)/arch/x86/boot/bzImage -drive \
 		file=$(HOME)/src/linux/kernel-dev-scripts/build/wheezy.img,if=virtio \
-		-append 'root=/dev/vda console=hvc0' \
+		-append 'root=/dev/vda console=hvc0 debug' \
 		-chardev stdio,id=stdio,mux=on,signal=off \
 		-device virtio-serial-pci \
 		-device virtconsole,chardev=stdio \
