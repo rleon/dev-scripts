@@ -1,4 +1,4 @@
-KERNEL_SRC=$(HOME)/src/linux/linux-mm
+KERNEL_SRC=$(HOME)/src/linux-rdma
 # VMware related
 VMWARE_VM=$(HOME)/src/vm-machines/archlinux/archlinux.vmx
 VMWARE_VM_REPACK=$(HOME)/src/vm-machines/archlinux/archlinux-000001.vmdk
@@ -14,7 +14,7 @@ kvm:
 	@# add -s option for running gdb
 	@# and run "ggb vmlinux"
 	@kvm -kernel $(KERNEL_SRC)/arch/x86/boot/bzImage -drive \
-		file=$(HOME)/src/linux/kernel-dev-scripts/build/wheezy.img,if=virtio \
+		file=$(HOME)/src/kernel-dev-scripts/build/wheezy.img,if=virtio \
 		-append 'root=/dev/vda console=hvc0 debug' \
 		-chardev stdio,id=stdio,mux=on,signal=off \
 		-device virtio-serial-pci \
