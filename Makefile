@@ -37,7 +37,7 @@ simx:
 	@MLX5_CONFIG_FILE=$(SIMX_CFG)
 	@$(SIMX_BIN) -enable-kvm -kernel $(KERNEL_SRC)/arch/x86/boot/bzImage -drive \
 		file=$(HOME)/src/kernel-dev-scripts/build/$(KVM_RELEASE).img,if=virtio,format=raw \
-		-append 'root=/dev/vda console=hvc0 debug rootwait rw' \
+		-m 512M -append 'root=/dev/vda console=hvc0 debug rootwait rw' \
 		-chardev stdio,id=stdio,mux=on,signal=off \
 		-device virtio-serial-pci \
 		-device virtconsole,chardev=stdio \
