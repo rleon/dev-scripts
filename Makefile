@@ -4,8 +4,9 @@ VMWARE_VM=$(HOME)/src/vm-machines/archlinux/archlinux.vmx
 VMWARE_VM_REPACK=$(HOME)/src/vm-machines/archlinux/archlinux-000001.vmdk
 
 # KVM related
-KVM_RELEASE=wheezy
-KVM_PACKAGES=openssh-server,python,perl,vim
+#KVM_RELEASE=wheezy
+KVM_RELEASE=jessie
+KVM_PACKAGES=openssh-server,python,perl,vim,ibverbs-utils,libibverbs-dev,libmlx5-dev
 ssh:
 	@ssh root@localhost -p4444
 
@@ -14,8 +15,8 @@ kvm:
 	@# add -s option for running gdb
 	@# and run "ggb vmlinux"
 	@kvm -kernel $(KERNEL_SRC)/arch/x86/boot/bzImage -drive \
-		file=$(HOME)/src/kernel-dev-scripts/build/wheezy.img,if=virtio \
-		-append 'root=/dev/vda console=hvc0 debug' \
+		file=$(HOME)/src/kernel-dev-scripts/build/$(KVM_RELEASE).img,if=virtio \
+		-append 'root=/dev/vda console=hvc0 debug rootwait rw' \
 		-chardev stdio,id=stdio,mux=on,signal=off \
 		-device virtio-serial-pci \
 		-device virtconsole,chardev=stdio \
@@ -25,7 +26,7 @@ kvm:
 		-net user,hostfwd=tcp:127.0.0.1:4444-:22
 
 kvm-image:
-	@echo "Build Debian 7.0 image"
+	@echo "Build Debian $(KVM_RELEASE) image"
 	@mkdir -p build/
 	@mkdir -p build/kvm-image
 	@sudo debootstrap --include=$(KVM_PACKAGES) $(KVM_RELEASE) build/kvm-image http://http.debian.net/debian/
