@@ -7,6 +7,11 @@ VMWARE_VM_REPACK=$(HOME)/src/vm-machines/archlinux/archlinux-000001.vmdk
 #KVM_RELEASE=wheezy
 KVM_RELEASE=jessie
 KVM_PACKAGES=openssh-server,python,perl,vim,ibverbs-utils,libibverbs-dev,libmlx5-dev
+
+# SimX related
+SIMX_BIN=$(HOME)/src/simx/x86_64-softmmu/qemu-system-x86_64
+SIMX_CFG=$(HOME)/src/simx/mlnx_infra/simx-qemu.cfg
+
 ssh:
 	@ssh root@localhost -p4444
 
@@ -15,7 +20,7 @@ kvm:
 	@# add -s option for running gdb
 	@# and run "ggb vmlinux"
 	@kvm -kernel $(KERNEL_SRC)/arch/x86/boot/bzImage -drive \
-		file=$(HOME)/src/kernel-dev-scripts/build/$(KVM_RELEASE).img,if=virtio \
+		file=$(HOME)/src/kernel-dev-scripts/build/$(KVM_RELEASE).img,if=virtio,format=raw \
 		-append 'root=/dev/vda console=hvc0 debug rootwait rw' \
 		-chardev stdio,id=stdio,mux=on,signal=off \
 		-device virtio-serial-pci \
@@ -24,6 +29,24 @@ kvm:
 		-display none \
 		-net nic,model=virtio,macaddr=52:54:00:12:34:56 \
 		-net user,hostfwd=tcp:127.0.0.1:4444-:22
+simx:
+	@echo "Start SimX image"
+	@# add -s option for running gdb
+	@# and run "ggb vmlinux"
+	@QEMU_AUDIO_DRV=none
+	@MLX5_CONFIG_FILE=$(SIMX_CFG)
+	@$(SIMX_BIN) -enable-kvm -kernel $(KERNEL_SRC)/arch/x86/boot/bzImage -drive \
+		file=$(HOME)/src/kernel-dev-scripts/build/$(KVM_RELEASE).img,if=virtio,format=raw \
+		-append 'root=/dev/vda console=hvc0 debug rootwait rw' \
+		-chardev stdio,id=stdio,mux=on,signal=off \
+		-device virtio-serial-pci \
+		-device virtconsole,chardev=stdio \
+		-mon chardev=stdio \
+		-display none \
+		-net nic,model=virtio,macaddr=52:54:00:12:34:56 \
+		-net user,hostfwd=tcp:127.0.0.1:4444-:22 \
+		-netdev tap,fd=26,id=hostnet0 -device e1000,netdev=hostnet0,id=net0,mac=00:50:56:18:25:09 \
+		-netdev tap,fd=28,id=hostnet1 -device connectx4,netdev=hostnet1,id=net1,mac=52:54:00:b5:47:32
 
 kvm-image:
 	@echo "Build Debian $(KVM_RELEASE) image"
