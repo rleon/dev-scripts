@@ -21,7 +21,7 @@ kvm:
 	@# add -s option for running gdb
 	@# and run "ggb vmlinux"
 	@kvm -kernel $(KERNEL_SRC)/arch/x86/boot/bzImage -drive \
-		file=$(HOME)/src/kernel-dev-scripts/build/$(KVM_RELEASE).img,if=virtio,format=raw \
+		file=$(HOME)/src/dev-scripts/build/$(KVM_RELEASE).img,if=virtio,format=raw \
 		-append 'root=/dev/vda console=hvc0 debug rootwait rw' \
 		-chardev stdio,id=stdio,mux=on,signal=off \
 		-device virtio-serial-pci \
@@ -37,7 +37,7 @@ simx:
 	@QEMU_AUDIO_DRV=none
 	@MLX5_CONFIG_FILE=$(SIMX_CFG)
 	@$(SIMX_BIN) -enable-kvm -kernel $(KERNEL_SRC)/arch/x86/boot/bzImage -drive \
-		file=$(HOME)/src/kernel-dev-scripts/build/$(KVM_RELEASE).img,if=virtio,format=raw \
+		file=$(HOME)/src/dev-scripts/build/$(KVM_RELEASE).img,if=virtio,format=raw \
 		-m 512M -append 'root=/dev/vda console=hvc0 debug rootwait rw' \
 		-chardev stdio,id=stdio,mux=on,signal=off \
 		-device virtio-serial-pci \
