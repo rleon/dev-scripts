@@ -5,7 +5,8 @@ VMWARE_VM_REPACK=$(HOME)/src/vm-machines/archlinux/archlinux-000001.vmdk
 
 # KVM related
 #KVM_RELEASE=wheezy
-KVM_RELEASE=jessie
+#KVM_RELEASE=jessie
+KVM_RELEASE=sid
 KVM_PACKAGES=openssh-server,python,perl,vim,ibverbs-utils,libibverbs-dev,libmlx5-dev,infiniband-diags,opensm,librdmacm-dev,rdmacm-utils
 
 # SimX related
