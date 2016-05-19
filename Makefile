@@ -1,17 +1,21 @@
 KERNEL_SRC=$(HOME)/src/linux-rdma
-# VMware related
+# VMware
 VMWARE_VM=$(HOME)/src/vm-machines/archlinux/archlinux.vmx
 VMWARE_VM_REPACK=$(HOME)/src/vm-machines/archlinux/archlinux-000001.vmdk
 
-# KVM related
+# KVM
 #KVM_RELEASE=wheezy
 #KVM_RELEASE=jessie
 KVM_RELEASE=sid
 KVM_PACKAGES=openssh-server,python,perl,vim,pciutils,ibverbs-utils,libibverbs-dev,libmlx5-dev,infiniband-diags,opensm,librdmacm-dev,rdmacm-utils
+KVM_SHARED=$(HOME)/src/kvm-shared
 
-# SimX related
+# SimX
 SIMX_BIN=$(HOME)/src/simx/x86_64-softmmu/qemu-system-x86_64
-SIMX_CFG=$(HOME)/src/simx/mlnx_infra/simx-qemu.cfg
+
+# LIBS
+LIBIBVERBS_SRC=$(HOME)/src/libibverbs/
+LIBMLX5_SRC=$(HOME)/src/libmlx5/
 
 ssh:
 	@ssh root@localhost -p4444
@@ -34,8 +38,6 @@ simx:
 	@echo "Start SimX image"
 	@# add -s option for running gdb
 	@# and run "ggb vmlinux"
-	@QEMU_AUDIO_DRV=none
-	@MLX5_CONFIG_FILE=$(SIMX_CFG)
 	@$(SIMX_BIN) -enable-kvm -kernel $(KERNEL_SRC)/arch/x86/boot/bzImage -drive \
 		file=$(HOME)/src/dev-scripts/build/$(KVM_RELEASE).img,if=virtio,format=raw \
 		-m 512M -append 'root=/dev/vda console=hvc0 debug rootwait rw' \
@@ -76,10 +78,30 @@ vmware-config:
 
 kvm-config:
 	@cp configs/kvm-config $(KERNEL_SRC)/.config
+
+clean-shared:
+	@rm -rf $(KVM_SHARED)/*
+
+libs:
+	@echo "Build libibverbs"
+	@cd $(LIBIBVERBS_SRC)/; ./autogen.sh; ./configure --prefix=$(KVM_SHARED) CFLAGS=-I$(KVM_SHARED)/include LDFLAGS=-L$(KVM_SHARED)/lib CPPFLAGS=-I$(KVM_SHARED)/include; $(MAKE); $(MAKE) install
+	@echo "Build libmlx5"
+	@cd $(LIBMLX5_SRC)/; ./autogen.sh; ./configure --prefix=$(KVM_SHARED) CFLAGS=-I$(KVM_SHARED)/include LDFLAGS=-L$(KVM_SHARED)/lib CPPFLAGS=-I$(KVM_SHARED)/include; $(MAKE); $(MAKE) install
+
 build:
 	@echo "Start kernel build"
 	@make -C $(KERNEL_SRC) oldconfig
 	@make -C $(KERNEL_SRC) -j8
+
+khi:
+	@echo "Install kernel headers"
+	@make -C $(KERNEL_SRC) headers_install INSTALL_HDR_PATH=$(KVM_SHARED)
+
+shared: clean-shared khi libs
+
+scp:
+	@ssh -p4444 root@localhost "rm -rf /root/kvm-shared"
+	@scp -r -P4444 /home/leonro/src/kvm-shared  root@localhost:/root/
 
 stop-vmware-vm:
 	@echo "Stop VMware VM"
