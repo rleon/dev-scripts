@@ -17,6 +17,9 @@ SIMX_BIN=$(HOME)/src/simx/x86_64-softmmu/qemu-system-x86_64
 LIBIBVERBS_SRC=$(HOME)/src/libibverbs/
 LIBMLX5_SRC=$(HOME)/src/libmlx5/
 
+# Strace
+STRACE_SRC=$(HOME)/src/strace-code/
+
 ssh:
 	@ssh root@localhost -p4444
 
@@ -40,6 +43,7 @@ simx:
 	@# and run "ggb vmlinux"
 	@$(SIMX_BIN) -enable-kvm -kernel $(KERNEL_SRC)/arch/x86/boot/bzImage -drive \
 		file=$(HOME)/src/dev-scripts/build/$(KVM_RELEASE).img,if=virtio,format=raw \
+		-no-reboot -nographic \
 		-m 512M -append 'root=/dev/vda console=hvc0 debug rootwait rw' \
 		-chardev stdio,id=stdio,mux=on,signal=off \
 		-device virtio-serial-pci \
@@ -97,11 +101,17 @@ khi:
 	@echo "Install kernel headers"
 	@make -C $(KERNEL_SRC) headers_install INSTALL_HDR_PATH=$(KVM_SHARED)
 
-shared: clean-shared khi libs
+strace:
+	@cd $(STRACE_SRC)/; ./bootstrap; ./configure --prefix=$(KVM_SHARED) CFLAGS=-I$(KVM_SHARED)/include LDFLAGS=-L$(KVM_SHARED)/lib CPPFLAGS=-I$(KVM_SHARED)/include; $(MAKE); $(MAKE) install
+
+shared: clean-shared khi strace libs
 
 scp:
-	@ssh -p4444 root@localhost "rm -rf /root/kvm-shared"
-	@scp -r -P4444 /home/leonro/src/kvm-shared  root@localhost:/root/
+	@ssh -p4444 root@localhost "rm -rf /home/leonro/src/kvm-shared"
+	@scp -r -P4444 /home/leonro/src/kvm-shared  root@localhost:/home/leonro/src/
+
+test:
+	@ssh -p4444 root@localhost "/home/leonro/src/kvm-shared/bin/ibv_devinfo"
 
 stop-vmware-vm:
 	@echo "Stop VMware VM"
