@@ -1,0 +1,20 @@
+#!/bin/sh
+
+removeIssue() {
+	`sed -i "/^Issue:[ 0-9]*/Id" $MSG`
+}
+
+removeChangeId () {
+	`sed -i "/^Change-id:[ 0-9]*/Id" $MSG`
+}
+
+branch=$(git symbolic-ref --short HEAD)
+remote=$(git config branch.$branch.remote)
+
+MSG=$1
+
+if test "true" != "`git config --bool --get remote.$remote.createChangeId`"
+then
+	removeIssue
+	removeChangeId
+fi

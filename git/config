@@ -1,11 +1,16 @@
 [user]
 	name = Leon Romanovsky
 	email = leon@kernel.org
+	signingkey = leon@kernel.org
+[sendemail]
+	smtpuser = leon@kernel.org
 [core]
 	repositoryformatversion = 0
 	filemode = true
 	bare = false
 	logallrefupdates = true
+[gerrit]
+	createChangeId = false
 [remote "origin"]
 	url = git@gitolite.kernel.org:pub/scm/linux/kernel/git/leon/linux-rdma
 	fetch = +refs/heads/*:refs/remotes/origin/*
@@ -17,12 +22,9 @@
 	url = git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
 	fetch = +refs/heads/*:refs/remotes/linus/*
 	email=leon@kernel.org
-[branch "rdma-linus"]
+[branch "topic/abi"]
 	remote = origin
-	merge = refs/heads/rdma-linus
-[branch "rdma-next"]
-	remote = origin
-	merge = refs/heads/rdma-next
+	merge = refs/heads/topic/abi
 [branch "testing/rdma-linus"]
 	remote = origin
 	merge = refs/heads/testing/rdma-linus
@@ -34,15 +36,18 @@
 	fetch = +refs/heads/*:refs/remotes/mellanox/*
 	createChangeId = true
 	email = leonro@mellanox.com
-[branch "m/ib-next"]
+[branch "m/abi"]
 	remote = mellanox
-	merge = refs/heads/ib-next
-[branch "m/net-next"]
-	remote = mellanox
-	merge = refs/heads/net-next
-[gerrit]
-	createChangeId = false
-	merge = refs/heads/ib-next-next-mlx
-[remote "dl"]
+	merge = refs/heads/abi
+[remote "rdma"]
 	url = git://git.kernel.org/pub/scm/linux/kernel/git/dledford/rdma.git
-	fetch = +refs/heads/*:refs/remotes/dl/*
+	fetch = +refs/heads/*:refs/remotes/rdma/*
+	email=leon@kernel.org
+[remote "net-next"]
+	url = git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git
+	fetch = +refs/heads/*:refs/remotes/net-next/*
+	email=leon@kernel.org
+[remote "net"]
+	url = git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git
+	fetch = +refs/heads/*:refs/remotes/net/*
+	email=leon@kernel.org
