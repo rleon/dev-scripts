@@ -4,6 +4,9 @@
 	signingkey = leon@kernel.org
 [sendemail]
 	smtpuser = leon@kernel.org
+[alias]
+	send-rdma-p = send-email --to=dledford@redhat.com --cc=linux-rdma@vger.kernel.org --annotate
+	send-rdma-s = !git send-rdma-p --cover-letter
 [core]
 	repositoryformatversion = 0
 	filemode = true
