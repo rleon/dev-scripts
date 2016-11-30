@@ -7,7 +7,8 @@ VMWARE_VM_REPACK=$(HOME)/src/vm-machines/archlinux/archlinux-000001.vmdk
 #KVM_RELEASE=wheezy
 #KVM_RELEASE=jessie
 KVM_RELEASE=sid
-KVM_PACKAGES=openssh-server,python,perl,vim,pciutils,ibverbs-utils,libibverbs-dev,libmlx5-dev,infiniband-diags,opensm,librdmacm-dev,rdmacm-utils
+#KVM_PACKAGES=openssh-server,python,perl,vim,pciutils,ibverbs-utils,libibverbs-dev,libmlx5-dev,infiniband-diags,opensm,librdmacm-dev,rdmacm-utils
+KVM_PACKAGES=openssh-server,python,perl,vim,pciutils,ibverbs-utils,libibverbs-dev,libmlx5-dev,infiniband-diags,librdmacm-dev,rdmacm-utils
 KVM_SHARED=$(HOME)/src/kvm-shared
 
 # SimX
@@ -111,7 +112,12 @@ scp:
 	@scp -r -P4444 /home/leonro/src/kvm-shared  root@localhost:/home/leonro/src/
 
 test:
-	@ssh -p4444 root@localhost "/home/leonro/src/kvm-shared/bin/ibv_devinfo"
+	@ssh -p4444 root@localhost "echo function_graph > /sys/kernel/debug/tracing/current_tracer"
+	@ssh -p4444 root@localhost "echo ib* > /sys/kernel/debug/tracing/set_ftrace_filter"
+	@ssh -p4444 root@localhost "echo uver* >> /sys/kernel/debug/tracing/set_ftrace_filter"
+	@ssh -p4444 root@localhost "echo "" > /sys/kernel/debug/tracing/trace"
+	@ssh -p4444 root@localhost "ibv_devinfo"
+	@ssh -p4444 root@localhost "cat /sys/kernel/debug/tracing/trace"
 
 stop-vmware-vm:
 	@echo "Stop VMware VM"
