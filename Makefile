@@ -30,31 +30,22 @@ kvm:
 	@# and run "ggb vmlinux"
 	@kvm -kernel $(KERNEL_SRC)/arch/x86/boot/bzImage -drive \
 		file=$(HOME)/src/dev-scripts/build/$(KVM_RELEASE).img,if=virtio,format=raw \
-		-append 'root=/dev/vda console=hvc0 debug rootwait rw net.ifnames=0' \
-		-chardev stdio,id=stdio,mux=on,signal=off \
-		-device virtio-serial-pci \
-		-device virtconsole,chardev=stdio \
-		-mon chardev=stdio \
-		-display none \
+		-append 'root=/dev/vda earlyprintk=serial,ttyS0,115200 console=hvc0 debug rw net.ifnames=0' \
+		-device virtio-serial-pci -serial mon:stdio -nographic \
 		-net nic,model=virtio,macaddr=52:54:01:12:34:56 \
 		-net user,hostfwd=tcp:127.0.0.1:4444-:22
+
 simx:
 	@echo "Start SimX image"
 	@# add -s option for running gdb
 	@# and run "ggb vmlinux"
 	@$(SIMX_BIN) -enable-kvm -kernel $(KERNEL_SRC)/arch/x86/boot/bzImage -drive \
 		file=$(HOME)/src/dev-scripts/build/$(KVM_RELEASE).img,if=virtio,format=raw \
-		-no-reboot -nographic \
-		-m 512M -append 'root=/dev/vda console=hvc0 debug rootwait rw net.ifnames=0' \
-		-chardev stdio,id=stdio,mux=on,signal=off \
-		-device virtio-serial-pci \
-		-device virtconsole,chardev=stdio \
-		-mon chardev=stdio \
-		-display none \
-		-net nic,model=virtio,macaddr=52:54:02:12:34:56 \
+		-no-reboot -nographic -m 512M \
+		-append 'root=/dev/vda earlyprintk=serial,ttyS0,115200 console=hvc0 debug rw net.ifnames=0' \
+		-net nic,model=virtio \
 		-net user,hostfwd=tcp:127.0.0.1:4444-:22 \
-		-netdev tap,fd=26,id=hostnet0 -device e1000,netdev=hostnet0,id=net0,mac=00:50:56:18:25:09 \
-		-netdev tap,fd=28,id=hostnet1 -device connectx4,netdev=hostnet1,id=net1,mac=52:54:00:b5:47:32
+		-device e1000 -device connectx4
 
 kvm-image:
 	@echo "Build Debian $(KVM_RELEASE) image"
