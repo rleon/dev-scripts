@@ -1,25 +1,17 @@
 KERNEL_SRC=$(HOME)/src/linux-rdma
-# VMware
-VMWARE_VM=$(HOME)/src/vm-machines/archlinux/archlinux.vmx
-VMWARE_VM_REPACK=$(HOME)/src/vm-machines/archlinux/archlinux-000001.vmdk
 
 # KVM
 #KVM_RELEASE=wheezy
 #KVM_RELEASE=jessie
-KVM_RELEASE=sid
+#KVM_RELEASE=sid
+KVM_RELEASE=testing
 #KVM_PACKAGES=openssh-server,python,perl,vim,pciutils,ibverbs-utils,libibverbs-dev,libmlx5-dev,infiniband-diags,opensm,librdmacm-dev,rdmacm-utils
-KVM_PACKAGES=openssh-server,python,perl,vim,pciutils,ibverbs-utils,libibverbs-dev,libmlx5-dev,infiniband-diags,librdmacm-dev,rdmacm-utils
-KVM_SHARED=$(HOME)/src/kvm-shared
+#KVM_PACKAGES=openssh-server,python,perl,vim,pciutils,ibverbs-utils,libibverbs-dev,libmlx5-dev,infiniband-diags,librdmacm-dev,rdmacm-utils
+KVM_PACKAGES=openssh-server,python,perl,vim,pciutils,iproute2
+KVM_SHARED=$(HOME)/src
 
 # SimX
 SIMX_BIN=$(HOME)/src/simx/x86_64-softmmu/qemu-system-x86_64
-
-# LIBS
-LIBIBVERBS_SRC=$(HOME)/src/libibverbs/
-LIBMLX5_SRC=$(HOME)/src/libmlx5/
-
-# Strace
-STRACE_SRC=$(HOME)/src/strace-code/
 
 ssh:
 	@ssh root@localhost -p4444
@@ -28,12 +20,13 @@ kvm:
 	@echo "Start KVM image"
 	@# add -s option for running gdb
 	@# and run "ggb vmlinux"
-	@kvm -kernel $(KERNEL_SRC)/arch/x86/boot/bzImage -drive \
+	@qemu-system-x86_64 -enable-kvm -kernel $(KERNEL_SRC)/arch/x86/boot/bzImage -drive \
 		file=$(HOME)/src/dev-scripts/build/$(KVM_RELEASE).img,if=virtio,format=raw \
 		-append 'root=/dev/vda earlyprintk=serial,ttyS0,115200 console=hvc0 debug rw net.ifnames=0' \
 		-device virtio-serial-pci -serial mon:stdio -nographic \
 		-net nic,model=virtio,macaddr=52:54:01:12:34:56 \
-		-net user,hostfwd=tcp:127.0.0.1:4444-:22
+		-net user,hostfwd=tcp:127.0.0.1:4444-:22 \
+		-virtfs local,path=$(KVM_SHARED),mount_tag=host0,security_model=passthrough,id=host0
 
 simx:
 	@echo "Start SimX image"
@@ -45,7 +38,8 @@ simx:
 		-append 'root=/dev/vda earlyprintk=serial,ttyS0,115200 console=hvc0 debug rw net.ifnames=0' \
 		-net nic,model=virtio \
 		-net user,hostfwd=tcp:127.0.0.1:4444-:22 \
-		-device e1000 -device connectx4
+		-device e1000 -device connectx4 \
+		-virtfs local,path=$(KVM_SHARED),mount_tag=host0,security_model=passthrough,id=host0
 
 kvm-image:
 	@echo "Build Debian $(KVM_RELEASE) image"
@@ -55,6 +49,7 @@ kvm-image:
 	@sudo sed -i '/^root/ { s/:x:/::/ }' build/kvm-image/etc/passwd
 	@echo 'V0:23:respawn:/sbin/getty 115200 hvc0' | sudo tee -a build/kvm-image/etc/inittab
 	@printf '\nauto eth0\niface eth0 inet dhcp\n' | sudo tee -a build/kvm-image/etc/network/interfaces
+	@printf '\nhost0   /mnt    9p      trans=virtio,version=9p2000.L   0 0\n' | sudo tee -a build/kvm-image/etc/fstab
 	@sudo mkdir build/kvm-image/root/.ssh/
 	@cat ~/.ssh/id_?sa.pub | sudo tee build/kvm-image/root/.ssh/authorized_keys
 	@dd if=/dev/zero of=build/$(KVM_RELEASE).img bs=1M seek=4095 count=1
@@ -69,66 +64,11 @@ kvm-image:
 clean-kvm-image:
 	@sudo rm -rf build/$(KVM_RELEASE).img build/mnt-$(KVM_RELEASE) build/kvm-image
 
-vmware-config:
-	@cp configs/vmware-config $(KERNEL_SRC)/.config
-
 kvm-config:
 	@cp configs/kvm-config $(KERNEL_SRC)/.config
 
-clean-shared:
-	@rm -rf $(KVM_SHARED)/*
-
-libs:
-	@echo "Build libibverbs"
-	@cd $(LIBIBVERBS_SRC)/; ./autogen.sh; ./configure --prefix=$(KVM_SHARED) CFLAGS=-I$(KVM_SHARED)/include LDFLAGS=-L$(KVM_SHARED)/lib CPPFLAGS=-I$(KVM_SHARED)/include; $(MAKE); $(MAKE) install
-	@echo "Build libmlx5"
-	@cd $(LIBMLX5_SRC)/; ./autogen.sh; ./configure --prefix=$(KVM_SHARED) CFLAGS=-I$(KVM_SHARED)/include LDFLAGS=-L$(KVM_SHARED)/lib CPPFLAGS=-I$(KVM_SHARED)/include; $(MAKE); $(MAKE) install
-
-build:
-	@echo "Start kernel build"
-	@make -C $(KERNEL_SRC) oldconfig
-	@make -C $(KERNEL_SRC) -j8
-
-khi:
-	@echo "Install kernel headers"
-	@make -C $(KERNEL_SRC) headers_install INSTALL_HDR_PATH=$(KVM_SHARED)
-
-strace:
-	@cd $(STRACE_SRC)/; ./bootstrap; ./configure --prefix=$(KVM_SHARED) CFLAGS=-I$(KVM_SHARED)/include LDFLAGS=-L$(KVM_SHARED)/lib CPPFLAGS=-I$(KVM_SHARED)/include; $(MAKE); $(MAKE) install
-
-shared: clean-shared khi strace libs
-
-scp:
-	@ssh -p4444 root@localhost "rm -rf /home/leonro/src/kvm-shared"
-	@scp -r -P4444 /home/leonro/src/kvm-shared  root@localhost:/home/leonro/src/
-
-test:
-	@ssh -p4444 root@localhost "echo function_graph > /sys/kernel/debug/tracing/current_tracer"
-	@ssh -p4444 root@localhost "echo ib* > /sys/kernel/debug/tracing/set_ftrace_filter"
-	@ssh -p4444 root@localhost "echo uver* >> /sys/kernel/debug/tracing/set_ftrace_filter"
-	@ssh -p4444 root@localhost "echo "" > /sys/kernel/debug/tracing/trace"
-	@ssh -p4444 root@localhost "ibv_devinfo"
-	@ssh -p4444 root@localhost "cat /sys/kernel/debug/tracing/trace"
-
-stop-vmware-vm:
-	@echo "Stop VMware VM"
-	@vmrun stop $(VMWARE_VM)
-
-start-vmware-vm:
-	@echo "Start VMware VM"
-	@vmrun start $(VMWARE_VM)
-
-update-vmware-vm:
-	@echo "Patch boot partition"
-	@mkdir -p build
-	@mkdir -p build/vmware
-	@vmware-mount $(VMWARE_VM_REPACK) build/vmware
-	@sudo cp -v $(KERNEL_SRC)/arch/x86/boot/bzImage build/vmware/vmlinuz-linux-dev
-	@sudo cp -v $(KERNEL_SRC)/System.map build/vmware
-	@vmware-mount -d build/vmware
-	@rmdir -rf build/vmware
-
-vmware-vm: stop-vmware-vm update-vmware-vm start-vmware-vm
+off:
+	@ssh -p4444 root@localhost "poweroff"
 
 all:
 	@echo "Do nothing!!!!!"

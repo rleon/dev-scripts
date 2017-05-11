@@ -1,9 +1,0 @@
-#!/bin/bash
-
-branch=$(git symbolic-ref --short HEAD)
-remote=$(git config branch.$branch.remote)
-useremail=$(git config remote.$remote.email)
-
-if [[ -n $useremail ]] ; then
-    git config --local user.email $useremail
-fi
